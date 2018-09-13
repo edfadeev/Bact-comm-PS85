@@ -315,58 +315,6 @@ EUK_DEseq <- DESeq(EUK_ddsMat, fitType="parametric")
 EUK_DEseq.res <- results(EUK_DEseq)
 
 #####################################
-# Identify enriched taxa
-#####################################
-# Identify enriched taxa
-#create taxonomy db
-EUK_tax <- as.data.frame(tax_table(EUK_pruned))
-EUK_tax$OTU <- rownames(tax_table(EUK_pruned))
-
-EUK_tax %>%
-  mutate_if(is.factor, as.character) -> EUK_tax
-
-#Extract the desired taxonomic level
-Genera <- unique(EUK_tax$X5)
-colnames(EUK_tax)[5] <- "id"
-
-#generate list of OTU for each Taxa
-OTU.gs_EUK <- list()
-
-for (s in 1:length(Genera)){
-  n <- Genera[s]
-  Order_OTU <- subset(EUK_tax, id == n)
-  OTU.gs_EUK[[n]] <- Order_OTU$OTU
-  
-}
-
-#####################################
-#Identify enriched families
-#####################################
-EUK_deseq2.fc <- EUK_DEseq.res$log2FoldChange
-names(EUK_deseq2.fc) <- rownames(EUK_DEseq.res)
-
-EUK_fc.Order.p <- gage(EUK_deseq2.fc, gsets = OTU.gs_EUK, same.dir=TRUE, ref = NULL, samp = NULL)
-
-#plot
-EUK_enrch <- rbind(EUK_fc.Order.p$greater,EUK_fc.Order.p$less)
-EUK_enrch.sig <-  data.frame(EUK_enrch[EUK_enrch[,"q.val"]<0.01 &
-                                   !is.na(EUK_enrch[,"q.val"]),])
-EUK_enrch.sig$id <- rownames(EUK_enrch.sig)
-
-EUK_enr.taxa.sig<- unique(merge(EUK_enrch.sig, EUK_tax[,c("id","X4")]))
-
-EUK_enr.taxa.sig.plot <- ggplot(data=EUK_enr.taxa.sig, aes(y=stat.mean , x=id, fill = X4, label = set.size))+ 
-  geom_text(aes(y=stat.mean , x=id), nudge_y= 0, nudge_x= -0.45)+
-  ylab("log2foldchange")+
-  geom_point(size = 5, shape = 21)+
-  #ylim(-12,12)+
-  scale_x_discrete("Taxa")+
-  geom_hline(aes(yintercept=0), linetype="dashed")+
-  theme(legend.position = "bottom")+
-  #scale_fill_manual(values = phyla.col)+
-  coord_flip() 
-
-#####################################
 #Extract daOTU for each region from the DESeq2 analysis (for networks and supp figures)
 #####################################
 #extract only significant OTU
