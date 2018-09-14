@@ -20,14 +20,19 @@ source('./Scripts/color_palettes.R')
 #####################################
 #Load phyloseq object
 ####################################
-PS85_BAC <-  readRDS("./Data/BAC_pruned.rds")
+PS85_BAC <-  readRDS("./Data/BAC_raw.rds")
 
 #####################################
 #Alpha diversity
 ####################################
-iNEXT.out <- iNEXT(as.data.frame(otu_table(PS85_BAC)), q=0, datatype="abundance", conf = 0.95, nboot = 100)
-meta <- as(sample_data(PS85_BAC), "data.frame")
+iNEXT.out <- iNEXT(as.data.frame(otu_table(PS85_BAC)), q=c(0),
+                   datatype="abundance", conf = 0.95, nboot = 100)
 
+iNEXT.out.test <- iNEXT(as.data.frame(otu_table(test)), q=c(1),
+                   datatype="abundance", conf = 0.95, nboot = 1)
+
+
+meta <- as(sample_data(PS85_BAC), "data.frame")
 rare <-fortify(iNEXT.out, type=1)
 meta$site <- rownames(meta)
 rare$Fraction <- meta$Fraction[match(rare$site, meta$site)] 
@@ -37,18 +42,17 @@ rare.line$method <- factor (rare.line$method,
                             c("interpolated", "extrapolated"),
                             c("interpolation", "extrapolation"))
 
-
-
 rare.p <- ggplot(rare, aes(x=x, y=y, colour = site))+
   geom_line(aes(linetype = method), lwd = 0.5, data= rare.line)+
-  #geom_ribbon(aes(ymin=y.lwr, ymax= y.upr, colour = NULL), alpha = 0.2)+
-  geom_point(aes(shape=Fraction), size =3, data= rare.point)+
+  #geom_ribbon(data = rare.line, aes(ymin=y.lwr, ymax= y.upr), alpha = 0.1)+
+  geom_point(aes(shape=Fraction), size =3, data= rare.point, colour = "black")+
   scale_colour_discrete(guide = FALSE)+
+  scale_x_continuous(limits= c(0,1e+5))+
   labs(x = "Sample size", y = "Species richness")+
   theme_classic(base_size = 12)+theme(legend.position="bottom")
 
 #coverage
-df <-fortify(iNEXT.out, type=3)
+df <-fortify(iNEXT.out, type=2)
 meta$site <- rownames(meta)
 df$Fraction <- meta$Fraction[match(df$site, meta$site)] 
 
@@ -62,55 +66,51 @@ df.line$method <- factor (df.line$method,
 cov.p <- ggplot(df, aes(x=x, y=y, colour = site))+
   geom_line(aes(linetype = method), lwd = 0.5, data= df.line)+
   #geom_ribbon(aes(ymin=y.lwr, ymax= y.upr, colour = NULL), alpha = 0.2)+
-  geom_point(aes(shape=Fraction), size =3, data= df.point)+
+  geom_point(aes(shape=Fraction), size =3, data= df.point, colour = "black")+
   scale_colour_discrete(guide = FALSE)+
-  scale_x_continuous(breaks=seq(0,1,0.1))+
-  labs(x = "Sample coverage", y = "Species richness")+
+  scale_x_continuous(limits= c(0,1e+5))+
+  scale_y_continuous(breaks=seq(0.9,1,0.05), limits = c(0.9,1))+
+  labs(x = "Sample size", y = "Sample coverage")+
   theme_classic(base_size = 12)+theme(legend.position="bottom")
 
 #combined plot
 plot_grid(rare.p, cov.p, labels = c("A", "B"), ncol = 2, align = "h")
 
-#summary table
-PS85_mm <- data.frame()
-PS85_alpha_chao1 <- data.frame()
-PS85_alpha_chao1.cov <- data.frame()
 
-for (sample in sample_names(PS85_BAC)){
-  mm.fit <- rare.line %>%
-    filter(method == "interpolation",
-           site == sample)
-  m1 <- drm(y ~ x, data = mm.fit, fct = MM.2())
-  PS85_mm <- rbind(PS85_mm, data.frame(sample, coef(m1)[1]))
- }
+#####################################
+#Table
+####################################
+BAC_richness <- iNEXT.out$AsyEst[iNEXT.out$AsyEst$Diversity == "Species richness",]
+BAC_shannon <- iNEXT.out$AsyEst[iNEXT.out$AsyEst$Diversity == "Shannon diversity",]
 
-PS85_alpha.div <- estimate_richness(PS85_BAC, measures = c("Observed", "Chao1"))
 
 PS85_comm.char<- data.frame(SampleID = sample_names(PS85_BAC),
                               StationName = sample_data(PS85_BAC)$StationName,
                               Type = sample_data(PS85_BAC)$Type,
                               Fraction = sample_data(PS85_BAC)$Fraction,
-                              Sample_sum = sample_sums(PS85_BAC),
-                              Observed = PS85_alpha.div$Observed,
-                              MM.fit = PS85_mm$coef.m1..1.,
-                              MM.fit.cov = 100*(PS85_alpha.div$Observed/PS85_mm$coef.m1..1.),
-                              Chao = iNEXT.out$AsyEst$Estimator[iNEXT.out$AsyEst$Diversity == "Species richness"],
-                              Chao.cov = PS85_alpha.div$Observed/(iNEXT.out$AsyEst$Estimator[iNEXT.out$AsyEst$Diversity == "Species richness"]),
-                              Sample.cov = 100*iNEXT.out$DataInfo$SC)
+                              Sample_sum = iNEXT.out$DataInfo$n,
+                              Observed = iNEXT.out$DataInfo$S.obs,
+                              Richness = BAC_richness$Estimator,
+                              Richness.cov = BAC_richness$Observed/BAC_richness$Estimator,
+                              Shannon = BAC_shannon$Estimator,
+                              Shannon.cov = exp(BAC_shannon$Observed)/exp(BAC_shannon$Estimator),
+                              Sam.comp = 100*iNEXT.out$DataInfo$SC)
 
+
+write.table(PS85_comm.char, file = "./Data/PS85_comm.char.txt")
 
 #Eukaryotes
-PS85_EUK <-  readRDS("./Data/EUK_pruned.rds")
+PS85_EUK <-  readRDS("./Data/EUK_raw.rds")
 
 #####################################
 #Alpha diversity
 ####################################
-iNEXT.out <- iNEXT(as.data.frame(otu_table(PS85_EUK)), q=0, datatype="abundance", conf = 0.95, nboot = 100)
+iNEXT.out.EUK <- iNEXT(as.data.frame(otu_table(PS85_EUK)), q=c(0), datatype="abundance", conf = 0.95, nboot = 100)
+
 meta <- as(sample_data(PS85_EUK), "data.frame")
 
-rare <-fortify(iNEXT.out, type=1)
+rare <-fortify(iNEXT.out.EUK, type=1)
 meta$site <- rownames(meta)
-rare$Fraction <- meta$Fraction[match(rare$site, meta$site)] 
 rare.point <- rare[which(rare$method == "observed"),]
 rare.line <- rare[which(rare$method != "observed"),]
 rare.line$method <- factor (rare.line$method,
@@ -122,15 +122,15 @@ rare.line$method <- factor (rare.line$method,
 rare.p <- ggplot(rare, aes(x=x, y=y, colour = site))+
   geom_line(aes(linetype = method), lwd = 0.5, data= rare.line)+
   #geom_ribbon(aes(ymin=y.lwr, ymax= y.upr, colour = NULL), alpha = 0.2)+
-  geom_point(aes(shape=Fraction), size =3, data= rare.point)+
+  geom_point(size =3, data= rare.point,shape = 3, colour = "black")+
   scale_colour_discrete(guide = FALSE)+
+  scale_x_continuous(limits= c(0,1e+5))+
   labs(x = "Sample size", y = "Species richness")+
   theme_classic(base_size = 12)+theme(legend.position="bottom")
 
 #coverage
-df <-fortify(iNEXT.out, type=3)
+df <-fortify(iNEXT.out.EUK, type=2)
 meta$site <- rownames(meta)
-df$Fraction <- meta$Fraction[match(df$site, meta$site)] 
 
 df.point <- df[which(df$method == "observed"),]
 df.line <- df[which(df$method != "observed"),]
@@ -142,38 +142,34 @@ df.line$method <- factor (df.line$method,
 cov.p <- ggplot(df, aes(x=x, y=y, colour = site))+
   geom_line(aes(linetype = method), lwd = 0.5, data= df.line)+
   #geom_ribbon(aes(ymin=y.lwr, ymax= y.upr, colour = NULL), alpha = 0.2)+
-  geom_point(aes(shape=Fraction), size =3, data= df.point)+
+  geom_point(size =3, data= df.point, shape = 3, colour = "black")+
   scale_colour_discrete(guide = FALSE)+
-  scale_x_continuous(breaks=seq(0,1,0.1))+
-  labs(x = "Sample coverage", y = "Species richness")+
+  scale_x_continuous(limits= c(0,1e+5))+
+  scale_y_continuous(breaks=seq(0.9,1,0.05), limits = c(0.9,1))+
+  labs(x = "Sample size", y = "Sample coverage")+
   theme_classic(base_size = 12)+theme(legend.position="bottom")
 
 #combined plot
 plot_grid(rare.p, cov.p, labels = c("A", "B"), ncol = 2, align = "h")
 
-#summary table
-PS85_mm <- data.frame()
-PS85_alpha_chao1 <- data.frame()
-PS85_alpha_chao1.cov <- data.frame()
 
-for (sample in sample_names(PS85_EUK)){
-  mm.fit <- rare.line %>%
-    filter(method == "interpolation",
-           site == sample)
-  m1 <- drm(y ~ x, data = mm.fit, fct = MM.2())
-  PS85_mm <- rbind(PS85_mm, data.frame(sample, coef(m1)[1]))
-}
 
-PS85_alpha.div <- estimate_richness(PS85_EUK, measures = c("Observed", "Chao1"))
 
-PS85_comm.char<- data.frame(SampleID = sample_names(PS85_EUK),
+EUK_richness <- iNEXT.out.EUK$AsyEst[iNEXT.out.EUK$AsyEst$Diversity == "Species richness",]
+EUK_shannon <- iNEXT.out.EUK$AsyEst[iNEXT.out.EUK$AsyEst$Diversity == "Shannon diversity",]
+
+
+
+PS85_comm.char.EUK<- data.frame(SampleID = sample_names(PS85_EUK),
                             StationName = sample_data(PS85_EUK)$StationName,
                             Type = sample_data(PS85_EUK)$Type,
                             #Fraction = sample_data(PS85_EUK)$Fraction,
-                            Sample_sum = sample_sums(PS85_EUK),
-                            Observed = PS85_alpha.div$Observed,
-                            MM.fit = PS85_mm$coef.m1..1.,
-                            MM.fit.cov = 100*(PS85_alpha.div$Observed/PS85_mm$coef.m1..1.),
-                            Chao = iNEXT.out$AsyEst$Estimator[iNEXT.out$AsyEst$Diversity == "Species richness"],
-                            Chao.cov = PS85_alpha.div$Observed/(iNEXT.out$AsyEst$Estimator[iNEXT.out$AsyEst$Diversity == "Species richness"]),
-                            Sample.cov = 100*iNEXT.out$DataInfo$SC)
+                            Sample_sum = iNEXT.out.EUK$DataInfo$n,
+                            Observed = iNEXT.out.EUK$DataInfo$S.obs,
+                            Richness = EUK_richness$Estimator,
+                            Richness.cov = EUK_richness$Observed/EUK_richness$Estimator,
+                            Shannon = EUK_shannon$Estimator,
+                            Shannon.cov = EUK_shannon$Observed/EUK_shannon$Estimator,
+                            Sam.comp = 100*iNEXT.out.EUK$DataInfo$SC)
+
+write.table(PS85_comm.char.EUK, file = "./Data/PS85_comm-char-EUK.txt")
