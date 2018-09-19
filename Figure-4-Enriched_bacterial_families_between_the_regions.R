@@ -29,8 +29,8 @@ BAC_PA <- prune_taxa(taxa_sums(BAC_PA)>0,BAC_PA)
 
 
 #define alpha
-alpha_val <- 0.01
-q_val <- 0.01
+alpha_val <- 0.05
+q_val <- 0.05
 
 ##run DEseq2
 #run DEseq on FL fraction
@@ -92,7 +92,7 @@ fc.Order.p <- gage(exp.fc, gsets = OTU.gs, same.dir=TRUE, ref = NULL, samp = NUL
 
 #plot
 FL_enrch <- rbind(fc.Order.p$greater,fc.Order.p$less)
-FL_enrch <-  data.frame(FL_enrch[FL_enrch[,"q.val"]<0.01 &
+FL_enrch <-  data.frame(FL_enrch[FL_enrch[,"q.val"]<0.05 &
                                    !is.na(FL_enrch[,"q.val"]),])
 FL_enrch$id <- rownames(FL_enrch)
 FL_enrch <- unique(merge(FL_enrch,BAC_tax[,c("id","Class")]))
@@ -107,7 +107,7 @@ fc.Order.p_PA <- gage(exp.fc_PA, gsets = OTU.gs, same.dir=TRUE, ref = NULL, samp
 
 #plot
 PA_enrch <- rbind(fc.Order.p_PA$greater,fc.Order.p_PA$less)
-PA_enrch <-  data.frame(PA_enrch[PA_enrch[,"q.val"]<0.01 &
+PA_enrch <-  data.frame(PA_enrch[PA_enrch[,"q.val"]<0.05 &
                                    !is.na(PA_enrch[,"q.val"]),])
 PA_enrch$id <- rownames(PA_enrch)
 PA_enrch <- unique(merge(PA_enrch,BAC_tax[,c("id","Class")]))
@@ -121,13 +121,15 @@ both_enr <- rbind(FL_enrch,PA_enrch)
 
 #correct taxa
 both_enr$id <- gsub("_unclassified", "_unc",both_enr$id)
+both_enr$id <- gsub("(Marine group B)", "",both_enr$id)
+both_enr$id <- gsub("(SAR406\ clade)", "",both_enr$id)
 both_enr$Class <- gsub("_unclassified", "_unc",both_enr$Class)
 
 #plot
 enrch.plot <- ggplot(data=both_enr, aes(y=stat.mean , x=id, label = set.size))+ 
-  geom_text(size = 5, aes(y=stat.mean , x=id), nudge_y= -1.4, nudge_x= 0)+
+  geom_text(size = 4, aes(y=stat.mean , x=id), nudge_y= -1.4, nudge_x= 0)+
   ylab("Mean log2foldchange")+ 
-  geom_point(size = 7, aes(colour = Class))+
+  geom_point(size = 5, aes(colour = Class))+
   scale_colour_manual(values = tol21rainbow)+ 
   ylim(-10,10)+
   scale_x_discrete("Family",expand = waiver())+
@@ -136,8 +138,8 @@ enrch.plot <- ggplot(data=both_enr, aes(y=stat.mean , x=id, label = set.size))+
   facet_wrap(~frac)+
   coord_flip()
 
-ggsave("./Figures/Figure-4-enriched_taxa_bac.png", enrch.plot,
-       dpi = 300, device= "png",width = 30, height = 30, units = "cm")
+ggsave("./Figures/Figure-4-enriched_taxa_bac.pdf", enrch.plot,
+       dpi = 300, device= "pdf",width = 17, height = 22, units = "cm")
 
 #####################################
 #explore enriched taxa
@@ -145,28 +147,28 @@ ggsave("./Figures/Figure-4-enriched_taxa_bac.png", enrch.plot,
 # Get the 5 most enriched in WSC-FL
 BAC_FL.enr.WSC <- data.frame(id=rownames(fc.Order.p$greater), fc.Order.p$greater) %>% 
   tbl_df() %>% 
-  dplyr::filter(q.val<0.01,row_number()<=5) %>% 
+  dplyr::filter(q.val<0.05,row_number()<=5) %>% 
   .$id %>% 
   as.character()
 
 # Get the 5 most enriched in EGC-FL
 BAC_FL.enr.EGC <- data.frame(id=rownames(fc.Order.p$less), fc.Order.p$less) %>% 
   tbl_df() %>% 
-  dplyr::filter(q.val<0.01,row_number()<=5) %>% 
+  dplyr::filter(q.val<0.05,row_number()<=5) %>% 
   .$id %>% 
   as.character()
 
 # Get the 5 most enriched in WSC-PA
 BAC_PA.enr.WSC <- data.frame(id=rownames(fc.Order.p_PA$greater), fc.Order.p_PA$greater) %>% 
   tbl_df() %>% 
-  dplyr::filter(q.val<0.01,row_number()<=5) %>% 
+  dplyr::filter(q.val<0.05,row_number()<=5) %>% 
   .$id %>% 
   as.character()
 
 # Get the 5 most enriched in EGC-PA
 BAC_PA.enr.EGC <- data.frame(id=rownames(fc.Order.p_PA$less), fc.Order.p_PA$less) %>% 
   tbl_df() %>% 
-  dplyr::filter(q.val<0.01,row_number()<=5) %>% 
+  dplyr::filter(q.val<0.05,row_number()<=5) %>% 
   .$id %>% 
   as.character()
 
@@ -176,7 +178,7 @@ BAC_PA.enr.EGC <- data.frame(id=rownames(fc.Order.p_PA$less), fc.Order.p_PA$less
 #Extract daOTU for each region from the DESeq2 analysis (for networks and supp figures)
 #####################################
 #extract only significant OTU
-BAC_FL.DEseq.res.sig <- BAC_FL.DEseq.res[which(BAC_FL.DEseq.res$padj < alpha_val), ]
+BAC_FL.DEseq.res.sig <- BAC_FL.DEseq.res[which(BAC_FL.DEseq.res$padj < 0.05), ]
 BAC_FL.DEseq.res.sig <- cbind(as(BAC_FL.DEseq.res.sig, "data.frame"),
                               as(tax_table(BAC_FL)[rownames(BAC_FL.DEseq.res.sig), ], "matrix"))
 BAC_FL.DEseq.res.sig$Order <- gsub("_unclassified| Incertae Sedis", "_unc",BAC_FL.DEseq.res.sig$Order)
@@ -186,7 +188,7 @@ BAC_FL.DEseq.WSC  <- BAC_FL.DEseq.res.sig[BAC_FL.DEseq.res.sig[, "log2FoldChange
 BAC_FL.DEseq.EGC  <- BAC_FL.DEseq.res.sig[BAC_FL.DEseq.res.sig[, "log2FoldChange"] < 0,c("baseMean", "log2FoldChange", "lfcSE", "padj", "Phylum", "Class", "Order", "Family", "Genus")]
 
 #extract only significant OTU
-BAC_PA.DEseq.res.sig <- BAC_PA.DEseq.res[which(BAC_PA.DEseq.res$padj < alpha_val), ]
+BAC_PA.DEseq.res.sig <- BAC_PA.DEseq.res[which(BAC_PA.DEseq.res$padj < 0.05), ]
 BAC_PA.DEseq.res.sig <- cbind(as(BAC_PA.DEseq.res.sig, "data.frame"),
                               as(tax_table(BAC_PA)[rownames(BAC_PA.DEseq.res.sig), ], "matrix"))
 BAC_PA.DEseq.res.sig$Order <- gsub("_unclassified| Incertae Sedis", "_unc",BAC_PA.DEseq.res.sig$Order)
@@ -315,10 +317,62 @@ EUK_DEseq <- DESeq(EUK_ddsMat, fitType="parametric")
 EUK_DEseq.res <- results(EUK_DEseq)
 
 #####################################
+# Identify enriched taxa
+#####################################
+# Identify enriched taxa
+#create taxonomy db
+EUK_tax <- as.data.frame(tax_table(EUK_pruned))
+EUK_tax$OTU <- rownames(tax_table(EUK_pruned))
+
+EUK_tax %>%
+  mutate_if(is.factor, as.character) -> EUK_tax
+
+#Extract the desired taxonomic level
+Genera <- unique(EUK_tax$X5)
+colnames(EUK_tax)[5] <- "id"
+
+#generate list of OTU for each Taxa
+OTU.gs_EUK <- list()
+
+for (s in 1:length(Genera)){
+  n <- Genera[s]
+  Order_OTU <- subset(EUK_tax, id == n)
+  OTU.gs_EUK[[n]] <- Order_OTU$OTU
+  
+}
+
+#####################################
+#Identify enriched families
+#####################################
+EUK_deseq2.fc <- EUK_DEseq.res$log2FoldChange
+names(EUK_deseq2.fc) <- rownames(EUK_DEseq.res)
+
+EUK_fc.Order.p <- gage(EUK_deseq2.fc, gsets = OTU.gs_EUK, same.dir=TRUE, ref = NULL, samp = NULL)
+
+#plot
+EUK_enrch <- rbind(EUK_fc.Order.p$greater,EUK_fc.Order.p$less)
+EUK_enrch.sig <-  data.frame(EUK_enrch[EUK_enrch[,"q.val"]<0.05 &
+                                   !is.na(EUK_enrch[,"q.val"]),])
+EUK_enrch.sig$id <- rownames(EUK_enrch.sig)
+
+EUK_enr.taxa.sig<- unique(merge(EUK_enrch.sig, EUK_tax[,c("id","X4")]))
+
+EUK_enr.taxa.sig.plot <- ggplot(data=EUK_enr.taxa.sig, aes(y=stat.mean , x=id, fill = X4, label = set.size))+ 
+  geom_text(aes(y=stat.mean , x=id), nudge_y= 0, nudge_x= -0.45)+
+  ylab("log2foldchange")+
+  geom_point(size = 5, shape = 21)+
+  #ylim(-12,12)+
+  scale_x_discrete("Taxa")+
+  geom_hline(aes(yintercept=0), linetype="dashed")+
+  theme(legend.position = "bottom")+
+  #scale_fill_manual(values = phyla.col)+
+  coord_flip() 
+
+#####################################
 #Extract daOTU for each region from the DESeq2 analysis (for networks and supp figures)
 #####################################
 #extract only significant OTU
-EUK.DEseq.res.sig <- EUK_DEseq.res[which(EUK_DEseq.res$padj < alpha_val), ]
+EUK.DEseq.res.sig <- EUK_DEseq.res[which(EUK_DEseq.res$padj < 0.05), ]
 EUK.DEseq.res.sig <- cbind(as(EUK.DEseq.res.sig, "data.frame"),
                               as(tax_table(EUK_pruned)[rownames(EUK.DEseq.res.sig), ], "matrix"))
 EUK.DEseq.res.sig$X3 <- gsub("_unclassified| Incertae Sedis", "_unc",EUK.DEseq.res.sig$X3)

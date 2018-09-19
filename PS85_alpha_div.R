@@ -28,10 +28,6 @@ PS85_BAC <-  readRDS("./Data/BAC_raw.rds")
 iNEXT.out <- iNEXT(as.data.frame(otu_table(PS85_BAC)), q=c(0),
                    datatype="abundance", conf = 0.95, nboot = 100)
 
-iNEXT.out.test <- iNEXT(as.data.frame(otu_table(test)), q=c(1),
-                   datatype="abundance", conf = 0.95, nboot = 1)
-
-
 meta <- as(sample_data(PS85_BAC), "data.frame")
 rare <-fortify(iNEXT.out, type=1)
 meta$site <- rownames(meta)
@@ -82,7 +78,7 @@ plot_grid(rare.p, cov.p, labels = c("A", "B"), ncol = 2, align = "h")
 ####################################
 BAC_richness <- iNEXT.out$AsyEst[iNEXT.out$AsyEst$Diversity == "Species richness",]
 BAC_shannon <- iNEXT.out$AsyEst[iNEXT.out$AsyEst$Diversity == "Shannon diversity",]
-
+BAC_simpson <- iNEXT.out$AsyEst[iNEXT.out$AsyEst$Diversity == "Simpson diversity",]
 
 PS85_comm.char<- data.frame(SampleID = sample_names(PS85_BAC),
                               StationName = sample_data(PS85_BAC)$StationName,
@@ -90,10 +86,12 @@ PS85_comm.char<- data.frame(SampleID = sample_names(PS85_BAC),
                               Fraction = sample_data(PS85_BAC)$Fraction,
                               Sample_sum = iNEXT.out$DataInfo$n,
                               Observed = iNEXT.out$DataInfo$S.obs,
-                              Richness = BAC_richness$Estimator,
+                              Richness = BAC_richness$Observed,
                               Richness.cov = BAC_richness$Observed/BAC_richness$Estimator,
-                              Shannon = BAC_shannon$Estimator,
-                              Shannon.cov = exp(BAC_shannon$Observed)/exp(BAC_shannon$Estimator),
+                              Shannon = BAC_shannon$Observed,
+                              Shannon.est = BAC_shannon$Estimator,
+                              Simpson = BAC_simpson$Observed,
+                              Simpson.est = BAC_simpson$Estimator,
                               Sam.comp = 100*iNEXT.out$DataInfo$SC)
 
 

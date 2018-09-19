@@ -25,10 +25,6 @@ BAC_FL <- prune_taxa(taxa_sums(BAC_FL)>0,BAC_FL)
 BAC_PA <- subset_samples(BAC_pruned_DCM, Fraction == "3")
 BAC_PA <- prune_taxa(taxa_sums(BAC_PA)>0,BAC_PA)
 
-#define alpha
-alpha_val <- 0.01
-q_val <- 0.01
-
 ##run DEseq2
 #run DEseq on FL fraction
 BAC_FL.ddsMat <- phyloseq_to_deseq2(BAC_FL, ~Region)
@@ -54,7 +50,7 @@ BAC_PA.DEseq.res <- results(BAC_PA.DEseq)
 #Extract daOTU for each region from the DESeq2 analysis (for networks and supp figures)
 #####################################
 #extract only significant OTU
-BAC_FL.DEseq.res.sig <- BAC_FL.DEseq.res[which(BAC_FL.DEseq.res$padj < alpha_val), ]
+BAC_FL.DEseq.res.sig <- BAC_FL.DEseq.res[which(BAC_FL.DEseq.res$padj < 0.05), ]
 BAC_FL.DEseq.res.sig <- cbind(as(BAC_FL.DEseq.res.sig, "data.frame"),
                               as(tax_table(BAC_FL)[rownames(BAC_FL.DEseq.res.sig), ], "matrix"))
 BAC_FL.DEseq.res.sig$Order <- gsub("_unclassified|Incertae Sedis", "_u",BAC_FL.DEseq.res.sig$Order)
@@ -64,7 +60,7 @@ BAC_FL.DEseq.WSC  <- BAC_FL.DEseq.res.sig[BAC_FL.DEseq.res.sig[, "log2FoldChange
 BAC_FL.DEseq.EGC  <- BAC_FL.DEseq.res.sig[BAC_FL.DEseq.res.sig[, "log2FoldChange"] < 0,c("baseMean", "log2FoldChange", "lfcSE", "padj", "Phylum", "Class", "Order", "Family", "Genus")]
 
 #extract only significant OTU
-BAC_PA.DEseq.res.sig <- BAC_PA.DEseq.res[which(BAC_PA.DEseq.res$padj < alpha_val), ]
+BAC_PA.DEseq.res.sig <- BAC_PA.DEseq.res[which(BAC_PA.DEseq.res$padj < 0.05), ]
 BAC_PA.DEseq.res.sig <- cbind(as(BAC_PA.DEseq.res.sig, "data.frame"),
                               as(tax_table(BAC_PA)[rownames(BAC_PA.DEseq.res.sig), ], "matrix"))
 BAC_PA.DEseq.res.sig$Order <- gsub("_unclassified| Incertae Sedis", "_unc",BAC_PA.DEseq.res.sig$Order)
