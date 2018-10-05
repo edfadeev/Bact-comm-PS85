@@ -12,5 +12,5 @@ The data directory includes the required otu table for both bacterial and eukary
 Eduard Fadeev
 
 ## Software Versions:
-R version: 3.5.0 \\
+R version: 3.5.0
 RStudio version: 1.1.447
