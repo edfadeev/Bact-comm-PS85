@@ -7,3 +7,10 @@ The data directory includes the required otu table for both bacterial and eukary
 ## Files:
 * dataset_preprocess.R - run at the beginning of the analysis
 * Alpha_diversity_calculations.R - produces the rarefactions and the akpha diversity indeces included in Table S1
+
+## Authors:
+Eduard Fadeev
+
+## Software Versions:
+R: version 3.5.0
+RStudio: Version 1.1.447
