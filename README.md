@@ -1,5 +1,6 @@
 This GitHub Repository contains code and data included in:
-# Microbial communities in the East and West Fram Strait during sea-ice melting season
+
+Fadeev, E., Salter, I., Schourup-Kristensen, V., Nöthig, E.-M., Metfies, K., Engel, A., et al. (2018). Microbial communities in the East and West Fram Strait during sea-ice melting season. Front. Mar. Sci. 5, 429. doi:10.3389/fmars.2018.00429.
 
 ## Data:
 The data directory includes the required otu table for both bacterial and eukaryotic communities, as well as the output from CoNet for generating the subnetworks.
