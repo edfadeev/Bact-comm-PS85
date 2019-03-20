@@ -16,7 +16,7 @@ The data directory includes the required otu table for both bacterial and eukary
 * *Sub_networks_of_the_FL_and_PA_fractions_in_the_EGC_and_WSC_regions.R* - produces sub-networks for each fraction and region (Figure 10 in the paper)
 
 ## Author:
-Eduard Fadeev([eddie.fadeev-at-outlook.com](eddie.fadeev@outlook.com)) 
+Eduard Fadeev([eddie.fadeev-at-outlook.com](mailto:ddie.fadeev@outlook.com)) 
 
 ## Software Versions:
 R version: 3.5.0\
